@@ -14,7 +14,6 @@ import { property } from "lit/decorators.js";
 
 import PFBackdrop from "@patternfly/patternfly/components/Backdrop/backdrop.css";
 import PFContent from "@patternfly/patternfly/components/Content/content.css";
-import PFModalBox from "@patternfly/patternfly/components/ModalBox/modal-box.css";
 import PFPage from "@patternfly/patternfly/components/Page/page.css";
 import PFBullseye from "@patternfly/patternfly/layouts/Bullseye/bullseye.css";
 import PFStack from "@patternfly/patternfly/layouts/Stack/stack.css";
@@ -40,7 +39,6 @@ export abstract class TableModal<T extends object> extends Table<T> {
 
     static styles: CSSResult[] = [
         ...super.styles,
-        PFModalBox,
         PFBullseye,
         PFContent,
         PFBackdrop,

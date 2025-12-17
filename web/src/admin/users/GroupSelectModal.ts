@@ -59,7 +59,7 @@ export class GroupSelectModal extends TableModal<Group> {
 
     renderModalInner(): SlottedTemplateResult {
         const willSuperuser = this.selectedElements.filter((g) => g.isSuperuser).length > 0;
-        return html`<section class="pf-c-modal-box__header pf-c-page__main-section pf-m-light">
+        return html`<section class="pf-c-modal-box__header">
                 <div class="pf-c-content">
                     <h1 class="pf-c-title pf-m-2xl">${msg("Select groups to add user to")}</h1>
                 </div>
@@ -73,7 +73,7 @@ export class GroupSelectModal extends TableModal<Group> {
                       </div>
                   `
                 : nothing}
-            <section class="pf-c-modal-box__body pf-m-light">${this.renderTable()}</section>
+            <section class="pf-c-modal-box__body">${this.renderTable()}</section>
             <footer class="pf-c-modal-box__footer">
                 <ak-spinner-button
                     .callAction=${() => {

@@ -3,10 +3,10 @@ import "#elements/EmptyState";
 import { DEFAULT_CONFIG } from "#common/api/config";
 import { globalAK } from "#common/global";
 
-import { AKElement } from "#elements/Base";
 import { ModalButton } from "#elements/buttons/ModalButton";
 import { WithBrandConfig } from "#elements/mixins/branding";
 import { WithLicenseSummary } from "#elements/mixins/license";
+import { AKModal } from "#elements/modals/ak-modal";
 
 import { AdminApi, CapabilitiesEnum, LicenseSummaryStatusEnum } from "@goauthentik/api";
 
@@ -17,79 +17,6 @@ import { createRef, ref } from "lit/directives/ref.js";
 import { until } from "lit/directives/until.js";
 
 import PFAbout from "@patternfly/patternfly/components/AboutModalBox/about-modal-box.css";
-
-export abstract class AKModal extends AKElement {
-    declare parentElement: HTMLDialogElement | null;
-
-    #renderContent: () => unknown;
-
-    public constructor() {
-        super();
-
-        this.#renderContent = this.render.bind(this);
-        this.render = this.#render;
-    }
-
-    public connectedCallback(): void {
-        super.connectedCallback();
-
-        const { parentElement } = this;
-
-        if (!parentElement) {
-            return;
-        }
-
-        const parentTagName = parentElement.tagName.toLowerCase();
-
-        if (!(parentElement instanceof HTMLDialogElement)) {
-            const tagName = this.tagName.toLowerCase();
-            throw new TypeError(
-                `${tagName} must be placed inside a <dialog> element, found <${parentTagName}> instead.`,
-            );
-        }
-
-        parentElement.addEventListener("toggle", this.#toggleListener);
-    }
-
-    public override disconnectedCallback(): void {
-        super.disconnectedCallback();
-
-        this.parentElement?.removeEventListener("toggle", this.#toggleListener);
-    }
-
-    #toggleListener = (event: ToggleEvent) => {
-        let open: boolean;
-
-        // While `ToggleEvent` is the correct type, this covers
-        if (event instanceof ToggleEvent) {
-            open = event.newState === "open";
-        } else {
-            open = this.parentElement?.open ?? false;
-        }
-
-        console.debug(">>> AKModal toggle event:", event, "open:", open);
-        this.requestUpdate();
-    };
-
-    public get open(): boolean {
-        return this.parentElement?.open ?? false;
-    }
-
-    public close: HTMLDialogElement["close"] = (returnValue) => {
-        this.parentElement?.close(returnValue);
-    };
-
-    // protected override shouldUpdate(_changedProperties: PropertyValues): boolean {
-    //     return this.open;
-    // }
-
-    #render() {
-        console.debug(">>> AKModal #render called, open:", this.open);
-        if (!this.open) return null;
-
-        return this.#renderContent();
-    }
-}
 
 type AboutEntry = [label: string, content: string | TemplateResult];
 
@@ -144,7 +71,6 @@ export class AboutModal extends WithLicenseSummary(WithBrandConfig(AKModal)) {
     #contentRef = createRef<HTMLDivElement>();
 
     protected override render() {
-        console.debug(">>> Rendering about modal");
         let product = this.brandingTitle;
 
         if (this.licenseSummary?.status !== LicenseSummaryStatusEnum.Unlicensed) {
@@ -159,7 +85,12 @@ export class AboutModal extends WithLicenseSummary(WithBrandConfig(AKModal)) {
                 />
             </div>
             <div class="pf-c-about-modal-box__close">
-                <button class="pf-c-button pf-m-plain" type="button" @click=${this.close}>
+                <button
+                    class="pf-c-button pf-m-plain"
+                    type="button"
+                    @click=${this.closeListener}
+                    aria-label=${msg("Close dialog")}
+                >
                     <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>

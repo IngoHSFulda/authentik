@@ -5,7 +5,7 @@ import { EVENT_REFRESH } from "#common/constants";
 import { Form } from "#elements/forms/Form";
 import { SlottedTemplateResult } from "#elements/types";
 
-import { html, TemplateResult } from "lit";
+import { html } from "lit";
 import { property } from "lit/decorators.js";
 
 /**
@@ -27,7 +27,7 @@ export abstract class ModelForm<T, PKT extends string | number> extends Form<T> 
      * @see {@linkcode loadInstance}
      * @returns A promise that resolves when the data has been loaded.
      */
-    async load(): Promise<void> {
+    protected async load(): Promise<void> {
         return Promise.resolve();
     }
 
@@ -45,13 +45,17 @@ export abstract class ModelForm<T, PKT extends string | number> extends Form<T> 
 
         this.#loading = true;
 
-        this.load().then(() => {
+        this.load().then(() =>
             this.loadInstance(value).then((instance) => {
                 this.instance = instance;
                 this.#loading = false;
                 this.requestUpdate();
-            });
-        });
+            }),
+        );
+    }
+
+    public get instancePk(): PKT | undefined {
+        return this.#instancePk;
     }
 
     #instancePk?: PKT;
@@ -65,7 +69,7 @@ export abstract class ModelForm<T, PKT extends string | number> extends Form<T> 
     #loading = false;
 
     @property({ attribute: false })
-    instance?: T = this.defaultInstance;
+    public instance?: T = this.defaultInstance;
 
     get defaultInstance(): T | undefined {
         return undefined;
@@ -82,19 +86,12 @@ export abstract class ModelForm<T, PKT extends string | number> extends Form<T> 
         });
     }
 
-    reset(): void {
+    public override reset(): void {
         this.instance = undefined;
         this.#initialLoad = false;
     }
 
-    renderVisible(): TemplateResult {
-        if ((this.#instancePk && !this.instance) || !this.#initialDataLoad) {
-            return html`<ak-empty-state loading></ak-empty-state>`;
-        }
-        return super.renderVisible();
-    }
-
-    render(): SlottedTemplateResult {
+    protected override render(): SlottedTemplateResult {
         // if we're in viewport now and haven't loaded AND have a PK set, load now
         // Or if we don't check for viewport in some cases
         const viewportVisible = this.isInViewport || !this.viewportCheck;
@@ -110,6 +107,10 @@ export abstract class ModelForm<T, PKT extends string | number> extends Form<T> 
                 // or @state() so let's trigger a re-render to be sure we get updated
                 this.requestUpdate();
             });
+        }
+
+        if ((this.#instancePk && !this.instance) || !this.#initialDataLoad) {
+            return html`<ak-empty-state loading></ak-empty-state>`;
         }
 
         return super.render();

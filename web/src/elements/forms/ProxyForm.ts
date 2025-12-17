@@ -58,7 +58,7 @@ export abstract class ProxyForm<T = unknown> extends Form<T> {
 
     //#region Render
 
-    public override renderVisible(): TemplateResult {
+    protected override render(): TemplateResult {
         const elementName = this.type;
         if (!elementName) {
             throw new TypeError("No element name provided");

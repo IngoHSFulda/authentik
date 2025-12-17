@@ -50,7 +50,7 @@ export class ConfigModal extends ModalButton {
     }
 
     renderModalInner() {
-        return html`<section class="pf-c-modal-box__header pf-c-page__main-section pf-m-light">
+        return html`<section class="pf-c-modal-box__header">
                 <div class="pf-c-content">
                     <h1 id="modal-title" class="pf-c-title pf-m-2xl">${msg("Connector setup")}</h1>
                 </div>

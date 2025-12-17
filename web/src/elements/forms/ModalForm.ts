@@ -3,21 +3,23 @@ import "#elements/buttons/SpinnerButton/index";
 
 import { EVENT_REFRESH } from "#common/constants";
 
-import { ModalButton } from "#elements/buttons/ModalButton";
-import { ModalHideEvent } from "#elements/controllers/ModalOrchestrationController";
 import { Form } from "#elements/forms/Form";
+import { AKModal } from "#elements/modals/ak-modal";
 
 import { msg } from "@lit/localize";
 import { html, nothing, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 @customElement("ak-forms-modal")
-export class ModalForm extends ModalButton {
+export class ModalForm extends AKModal {
     //#region Properties
 
     @property({ type: Boolean })
     public closeAfterSuccessfulSubmit = true;
 
+    /**
+     * @deprecated
+     */
     @property({ type: Boolean })
     public showSubmitButton = true;
 
@@ -43,13 +45,13 @@ export class ModalForm extends ModalButton {
 
         if (!form.reportValidity()) {
             this.loading = false;
-            this.locked = false;
+            // this.locked = false;
 
             return;
         }
 
         this.loading = true;
-        this.locked = true;
+        // this.locked = true;
 
         const formPromise = form.submit(
             new SubmitEvent("submit", {
@@ -74,63 +76,57 @@ export class ModalForm extends ModalButton {
                 }
 
                 this.loading = false;
-                this.locked = false;
+                // this.locked = false;
             })
             .catch((error: unknown) => {
                 this.loading = false;
-                this.locked = false;
+                // this.locked = false;
 
                 throw error;
             });
     };
 
-    #cancel = (): void => {
-        const defaultInvoked = this.dispatchEvent(new ModalHideEvent(this));
+    // #cancel = (): void => {
+    //     const defaultInvoked = this.dispatchEvent(new ModalHideEvent(this));
 
-        if (defaultInvoked) {
-            this.resetForms();
-        }
-    };
+    //     if (defaultInvoked) {
+    //         // this.resetForms();
+    //     }
+    // };
 
-    #refreshListener = (e: Event): void => {
-        // if the modal should stay open after successful submit, prevent EVENT_REFRESH from bubbling
-        // to the parent components (which would cause table refreshes that destroy the modal)
-        if (!this.closeAfterSuccessfulSubmit) {
-            e.stopPropagation();
-        }
-    };
+    // #refreshListener = (e: Event): void => {
+    //     // if the modal should stay open after successful submit, prevent EVENT_REFRESH from bubbling
+    //     // to the parent components (which would cause table refreshes that destroy the modal)
+    //     if (!this.closeAfterSuccessfulSubmit) {
+    //         e.stopPropagation();
+    //     }
+    // };
 
-    #scrollListener = () => {
-        window.dispatchEvent(
-            new CustomEvent("scroll", {
-                bubbles: true,
-            }),
-        );
-    };
+    // #scrollListener = () => {
+    //     window.dispatchEvent(
+    //         new CustomEvent("scroll", {
+    //             bubbles: true,
+    //         }),
+    //     );
+    // };
 
     override connectedCallback(): void {
         super.connectedCallback();
-        this.addEventListener(EVENT_REFRESH, this.#refreshListener);
+
+        // this.addEventListener(EVENT_REFRESH, this.#refreshListener);
     }
 
-    override disconnectedCallback(): void {
-        super.disconnectedCallback();
-        this.removeEventListener(EVENT_REFRESH, this.#refreshListener);
-    }
+    // override disconnectedCallback(): void {
+    //     super.disconnectedCallback();
+    //     this.removeEventListener(EVENT_REFRESH, this.#refreshListener);
+    // }
 
-    protected renderModalInner(): TemplateResult {
+    protected render(): TemplateResult {
         return html`${this.loading
                 ? html`<ak-loading-overlay topmost></ak-loading-overlay>`
                 : nothing}
-            <section class="pf-c-modal-box__header pf-c-page__main-section pf-m-light">
-                <div class="pf-c-content">
-                    <h1 id="modal-title" class="pf-c-title pf-m-2xl">
-                        <slot name="header"></slot>
-                    </h1>
-                </div>
-            </section>
             <slot name="above-form"></slot>
-            <section class="pf-c-modal-box__body" @scroll=${this.#scrollListener}>
+            <section class="pf-c-modal-box__body">
                 <slot name="form"></slot>
             </section>
             <fieldset class="pf-c-modal-box__footer">
@@ -148,7 +144,7 @@ export class ModalForm extends ModalButton {
                 <button
                     type="button"
                     aria-description=${msg("Cancel action")}
-                    @click=${this.#cancel}
+                    @click=${this.closeListener}
                     class="pf-c-button pf-m-secondary"
                 >
                     ${this.cancelText}

@@ -59,14 +59,14 @@ export class ConfirmationForm extends ModalButton {
     }
 
     renderModalInner(): TemplateResult {
-        return html`<section class="pf-c-modal-box__header pf-c-page__main-section pf-m-light">
+        return html`<section class="pf-c-modal-box__header">
                 <div class="pf-c-content">
                     <h1 class="pf-c-title pf-m-2xl">
                         <slot name="header"></slot>
                     </h1>
                 </div>
             </section>
-            <section class="pf-c-modal-box__body pf-m-light">
+            <section class="pf-c-modal-box__body">
                 <form class="pf-c-form pf-m-horizontal">
                     <slot class="pf-c-content" name="body"></slot>
                 </form>

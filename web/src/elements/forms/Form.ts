@@ -10,6 +10,7 @@ import { dateToUTC } from "#common/temporal";
 
 import { isControlElement } from "#elements/AkControlElement";
 import { AKElement } from "#elements/Base";
+import { intersectionObserver } from "#elements/decorators/intersection-observer";
 import { reportValidityDeep } from "#elements/forms/FormGroup";
 import { PreventFormSubmit } from "#elements/forms/helpers";
 import { HorizontalFormElement } from "#elements/forms/HorizontalFormElement";
@@ -258,12 +259,9 @@ export abstract class Form<T = Record<string, unknown>> extends AKElement {
      * Blocks rendering the form if the form is not within the
      * viewport.
      *
-     * @todo Consider using a observer instead.
      */
-    public get isInViewport(): boolean {
-        const rect = this.getBoundingClientRect();
-        return rect.x + rect.y + rect.width + rect.height !== 0;
-    }
+    @intersectionObserver()
+    public isInViewport = false;
 
     /**
      * An overridable method for returning a success message after a successful submission.
@@ -420,7 +418,7 @@ export abstract class Form<T = Record<string, unknown>> extends AKElement {
 
     //#region Render
 
-    public renderFormWrapper(): TemplateResult {
+    protected renderFormWrapper(): TemplateResult {
         const inline = this.renderForm();
 
         if (!inline) {
@@ -445,7 +443,7 @@ export abstract class Form<T = Record<string, unknown>> extends AKElement {
         return null;
     }
 
-    public renderNonFieldErrors(): SlottedTemplateResult {
+    protected renderNonFieldErrors(): SlottedTemplateResult {
         if (!this.nonFieldErrors) {
             return nothing;
         }
@@ -466,16 +464,8 @@ export abstract class Form<T = Record<string, unknown>> extends AKElement {
         </div>`;
     }
 
-    public renderVisible(): TemplateResult {
-        return html` ${this.renderNonFieldErrors()} ${this.renderFormWrapper()}`;
-    }
-
-    public render(): SlottedTemplateResult {
-        if (this.viewportCheck && !this.isInViewport) {
-            return nothing;
-        }
-
-        return this.renderVisible();
+    protected override render(): SlottedTemplateResult {
+        return html`${this.renderNonFieldErrors()} ${this.renderFormWrapper()}`;
     }
 
     //#endregion

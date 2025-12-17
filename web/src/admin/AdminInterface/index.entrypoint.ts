@@ -35,7 +35,7 @@ import { CapabilitiesEnum } from "@goauthentik/api";
 import { CSSResult, html, nothing, PropertyValues, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
-import { createRef, ref } from "lit/directives/ref.js";
+import { createRef } from "lit/directives/ref.js";
 
 import PFButton from "@patternfly/patternfly/components/Button/button.css";
 import PFDrawer from "@patternfly/patternfly/components/Drawer/drawer.css";
@@ -205,14 +205,11 @@ export class AdminInterface extends WithCapabilitiesConfig(WithSession(Authentic
                                     : "display-none"}"
                                 ?hidden=${!this.apiDrawerOpen}
                             ></ak-api-drawer>
-                            <ak-about-modal></ak-about-modal>
                         </div>
                     </div>
                 </div>
             </div>
-            <dialog ${ref(this.#aboutDialogRef)}>
-                <ak-about-modal></ak-about-modal>
-            </dialog> `;
+            ${!Date.now() ? html`<ak-about-modal id="about-authentik"></ak-about-modal>` : nothing}`;
     }
 }
 

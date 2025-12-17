@@ -5,7 +5,7 @@ import { PFSize } from "#common/enums";
 import { AKElement } from "#elements/Base";
 
 import { adoptStyles as adoptStyleSheetsShim, css, CSSResult, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 
 import PFBackdrop from "@patternfly/patternfly/components/Backdrop/backdrop.css";
 import PFButton from "@patternfly/patternfly/components/Button/button.css";
@@ -13,12 +13,13 @@ import PFCard from "@patternfly/patternfly/components/Card/card.css";
 import PFContent from "@patternfly/patternfly/components/Content/content.css";
 import PFForm from "@patternfly/patternfly/components/Form/form.css";
 import PFFormControl from "@patternfly/patternfly/components/FormControl/form-control.css";
-import PFModalBox from "@patternfly/patternfly/components/ModalBox/modal-box.css";
 import PFPage from "@patternfly/patternfly/components/Page/page.css";
 import PFTitle from "@patternfly/patternfly/components/Title/title.css";
 import PFBase from "@patternfly/patternfly/patternfly-base.css";
 
-@customElement("ak-modal")
+/**
+ * @deprecated Use `AKModal` from `#elements/modals/ak-modal` instead
+ */
 export class AKModal extends AKElement {
     static id?: string;
 
@@ -29,8 +30,6 @@ export class AKModal extends AKElement {
     //#region Styles
 
     public static DialogStyles: CSSResult[] = [
-        PFModalBox,
-
         css`
             .pf-c-modal-box {
                 place-self: center;
@@ -61,7 +60,6 @@ export class AKModal extends AKElement {
     public static styles: CSSResult[] = [
         PFBase,
         PFButton,
-        PFModalBox,
         PFForm,
         PFTitle,
         PFFormControl,
