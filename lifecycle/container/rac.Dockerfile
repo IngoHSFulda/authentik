@@ -1,23 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# Stage 1: Build web
-FROM --platform=${BUILDPLATFORM} docker.io/library/node:24 AS web-builder
-
-ENV NODE_ENV=production
-WORKDIR /static
-
-COPY package.json /
-RUN --mount=type=bind,target=/static/package.json,src=./web/package.json \
-    --mount=type=bind,target=/static/package-lock.json,src=./web/package-lock.json \
-    --mount=type=bind,target=/static/scripts,src=./web/scripts \
-    --mount=type=cache,target=/root/.npm \
-    npm ci
-
-COPY web .
-RUN npm run build-proxy
-
-# Stage 2: Build
-FROM --platform=${BUILDPLATFORM} docker.io/library/golang:1.25.5-trixie@sha256:5d35fb8d28b9095d123b7d96095bbf3750ff18be0a87e5a21c9cffc4351fbf96 AS builder
+# Stage 1: Build
+FROM --platform=${BUILDPLATFORM} docker.io/library/golang:1.25.5-trixie@sha256:8e8f9c84609b6005af0a4a8227cee53d6226aab1c6dcb22daf5aeeb8b05480e1 AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -44,10 +28,10 @@ RUN --mount=type=cache,sharing=locked,target=/go/pkg/mod \
     --mount=type=cache,id=go-build-$TARGETARCH$TARGETVARIANT,sharing=locked,target=/root/.cache/go-build \
     if [ "$TARGETARCH" = "arm64" ]; then export CC=aarch64-linux-gnu-gcc && export CC_FOR_TARGET=gcc-aarch64-linux-gnu; fi && \
     CGO_ENABLED=1 GOFIPS140=latest GOARM="${TARGETVARIANT#v}" \
-    go build -o /go/proxy ./cmd/proxy
+    go build -o /go/rac ./cmd/rac
 
-# Stage 3: Run
-FROM ghcr.io/goauthentik/fips-debian:trixie-slim-fips@sha256:dea09c454c8ae6887465038be82d00fd815bbc9f7f2dccab132d9b1fb37c8dc6
+# Stage 2: Run
+FROM ghcr.io/goauthentik/guacd:v1.6.0-fips@sha256:1d99572b0260924149b8c923c021a32016f885fcea6d5cc8d58f718dfdc7a2dd
 
 ARG VERSION
 ARG GIT_BUILD_HASH
@@ -55,34 +39,30 @@ ENV GIT_BUILD_HASH=$GIT_BUILD_HASH
 
 LABEL org.opencontainers.image.authors="Authentik Security Inc." \
     org.opencontainers.image.source="https://github.com/goauthentik/authentik" \
-    org.opencontainers.image.description="goauthentik.io Proxy outpost image, see https://goauthentik.io for more info." \
+    org.opencontainers.image.description="goauthentik.io RAC outpost, see https://goauthentik.io for more info." \
     org.opencontainers.image.documentation="https://docs.goauthentik.io" \
     org.opencontainers.image.licenses="https://github.com/goauthentik/authentik/blob/main/LICENSE" \
     org.opencontainers.image.revision=${GIT_BUILD_HASH} \
     org.opencontainers.image.source="https://github.com/goauthentik/authentik" \
-    org.opencontainers.image.title="authentik proxy outpost image" \
+    org.opencontainers.image.title="authentik RAC outpost image" \
     org.opencontainers.image.url="https://goauthentik.io" \
     org.opencontainers.image.vendor="Authentik Security Inc." \
     org.opencontainers.image.version=${VERSION}
 
+USER root
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get clean && \
     rm -rf /tmp/* /var/lib/apt/lists/*
+USER 1000
 
-COPY --from=builder /go/proxy /
-COPY --from=web-builder /static/robots.txt /web/robots.txt
-COPY --from=web-builder /static/security.txt /web/security.txt
-COPY --from=web-builder /static/dist/ /web/dist/
-COPY --from=web-builder /static/authentik/ /web/authentik/
+COPY --from=builder /go/rac /
 
-HEALTHCHECK --interval=5s --retries=20 --start-period=3s CMD [ "/proxy", "healthcheck" ]
-
-EXPOSE 9000 9300 9443
+HEALTHCHECK --interval=5s --retries=20 --start-period=3s CMD [ "/rac", "healthcheck" ]
 
 USER 1000
 
 ENV TMPDIR=/dev/shm/ \
     GOFIPS=1
 
-ENTRYPOINT ["/proxy"]
+ENTRYPOINT ["/rac"]
