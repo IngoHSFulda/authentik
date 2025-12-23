@@ -130,13 +130,37 @@ export class GroupViewPage extends AKElement {
                                         <dd class="pf-c-description-list__description">
                                             <div class="pf-c-description-list__text">
                                                 <ul class="pf-c-list">
-                                                    ${this.group.rolesObj.map((role) => {
-                                                        return html`<li>
-                                                            <a href=${`#/identity/roles/${role.pk}`}
-                                                                >${role.name}
-                                                            </a>
-                                                        </li>`;
-                                                    })}
+                                                    ${this.group.rolesObj.length > 0
+                                                        ? this.group.rolesObj.map((role) => {
+                                                              return html`<li>
+                                                                  <a href=${`#/identity/roles/${role.pk}`}
+                                                                      >${role.name}
+                                                                  </a>
+                                                              </li>`;
+                                                          })
+                                                        : html`<li><em>${msg("None")}</em></li>`}
+                                                </ul>
+                                            </div>
+                                        </dd>
+                                    </div>
+                                    <div class="pf-c-description-list__group">
+                                        <dt class="pf-c-description-list__term">
+                                            <span class="pf-c-description-list__text"
+                                                >${msg("Inherited Roles")}</span
+                                            >
+                                        </dt>
+                                        <dd class="pf-c-description-list__description">
+                                            <div class="pf-c-description-list__text">
+                                                <ul class="pf-c-list">
+                                                    ${(this.group.inheritedRolesObj ?? []).length > 0
+                                                        ? (this.group.inheritedRolesObj ?? []).map((role) => {
+                                                              return html`<li>
+                                                                  <a href=${`#/identity/roles/${role.pk}`}
+                                                                      >${role.name}
+                                                                  </a>
+                                                              </li>`;
+                                                          })
+                                                        : html`<li><em>${msg("None")}</em></li>`}
                                                 </ul>
                                             </div>
                                         </dd>

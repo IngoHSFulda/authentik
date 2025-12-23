@@ -20064,6 +20064,10 @@ paths:
         name: managed__isnull
         schema:
           type: boolean
+      - in: query
+        name: member
+        schema:
+          type: integer
       - $ref: '#/components/parameters/QueryName'
       - $ref: '#/components/parameters/QueryPaginationOrdering'
       - $ref: '#/components/parameters/QueryPaginationPage'
@@ -38773,6 +38777,11 @@ components:
           items:
             $ref: '#/components/schemas/Role'
           readOnly: true
+        inherited_roles_obj:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+          readOnly: true
         children:
           type: array
           items:
@@ -38788,6 +38797,7 @@ components:
       required:
       - children
       - children_obj
+      - inherited_roles_obj
       - name
       - num_pk
       - parents_obj

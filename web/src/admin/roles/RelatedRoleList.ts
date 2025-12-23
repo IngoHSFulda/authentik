@@ -99,7 +99,8 @@ export class RelatedRoleList extends Table<Role> {
     async apiEndpoint(): Promise<PaginatedResponse<Role>> {
         return new RbacApi(DEFAULT_CONFIG).rbacRolesList({
             ...(await this.defaultEndpointConfig()),
-            users: this.targetUser ? [this.targetUser.pk] : [],
+            // Use 'member' filter to include both direct and inherited roles via groups
+            member: this.targetUser?.pk,
         });
     }
 

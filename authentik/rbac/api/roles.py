@@ -1,8 +1,9 @@
 """RBAC Roles"""
 
 from django.contrib.auth.models import Permission
+from django.db.models import Q
 from django.http import Http404
-from django_filters.filters import AllValuesMultipleFilter, BooleanFilter
+from django_filters.filters import AllValuesMultipleFilter, BooleanFilter, NumberFilter
 from django_filters.filterset import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
@@ -65,15 +66,29 @@ class RoleSerializer(ManagedSerializer, ModelSerializer):
 
 
 class RoleFilterSet(FilterSet):
-    """Filter for PropertyMapping"""
+    """Filter for Role"""
 
     managed = extend_schema_field(OpenApiTypes.STR)(AllValuesMultipleFilter(field_name="managed"))
 
     managed__isnull = BooleanFilter(field_name="managed", lookup_expr="isnull")
 
+    member = extend_schema_field(OpenApiTypes.INT)(
+        NumberFilter(method="filter_member", label="Filter by user membership (direct or inherited)")
+    )
+
+    def filter_member(self, queryset, name, value):
+        """Filter roles by user membership, including inherited via groups"""
+        try:
+            user = User.objects.get(pk=value)
+        except User.DoesNotExist:
+            return queryset.none()
+        return queryset.filter(
+            Q(users=user) | Q(ak_groups__in=user.all_groups())
+        ).distinct()
+
     class Meta:
         model = Role
-        fields = ["name", "users", "managed"]
+        fields = ["name", "users", "managed", "member"]
 
 
 class RoleViewSet(UsedByMixin, ModelViewSet):
