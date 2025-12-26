@@ -55,7 +55,14 @@ class ApplicationSerializer(ModelSerializer):
     meta_icon_url = ReadOnlyField(source="get_meta_icon")
 
     def get_launch_url(self, app: Application) -> str | None:
-        """Allow formatting of launch URL"""
+        """Allow formatting of launch URL.
+
+        Uses cached launch_url if available (set during _filter_applications_with_launch_url).
+        """
+        # Check if launch_url was already computed and cached on the instance
+        if hasattr(app, "_cached_launch_url"):
+            return app._cached_launch_url
+
         user = None
         user_data = None
 
@@ -180,11 +187,25 @@ class ApplicationViewSet(UsedByMixin, ModelViewSet):
         )
 
     def _filter_applications_with_launch_url(
-        self, paginated_apps: QuerySet[Application]
+        self, paginated_apps: QuerySet[Application], user: User | None = None
     ) -> list[Application]:
+        """Filter applications that have a launch URL.
+
+        Caches the computed launch_url on each app instance to avoid recomputation
+        during serialization.
+        """
         applications = []
+        user_data = None
+
+        # Pre-serialize user data once for all apps
+        if user is not None:
+            user_data = UserSerializer(instance=user).data
+
         for app in paginated_apps:
-            if app.get_launch_url():
+            launch_url = app.get_launch_url(user, user_data=user_data)
+            if launch_url:
+                # Cache the launch_url on the instance to avoid recomputation in serializer
+                app._cached_launch_url = launch_url
                 applications.append(app)
         return applications
 
@@ -306,7 +327,9 @@ class ApplicationViewSet(UsedByMixin, ModelViewSet):
         allowed_applications = self._expand_applications(allowed_applications)
 
         if only_with_launch_url == "true":
-            allowed_applications = self._filter_applications_with_launch_url(allowed_applications)
+            allowed_applications = self._filter_applications_with_launch_url(
+                allowed_applications, user=request.user
+            )
 
         serializer = self.get_serializer(allowed_applications, many=True)
         return self.get_paginated_response(serializer.data)

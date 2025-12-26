@@ -14,8 +14,9 @@ from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.contrib.sessions.base_session import AbstractBaseSession
 from django.core.validators import validate_slug
 from django.db import models
-from django.db.models import Q, QuerySet, options
+from django.db.models import Q, QuerySet, Value, options
 from django.db.models.constants import LOOKUP_SEP
+from django.db.models.functions import Coalesce
 from django.http import HttpRequest
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -653,16 +654,53 @@ class BackchannelProvider(Provider):
         abstract = True
 
 
+# Cache for provider subclasses which is ascomputed once at startup
+_PROVIDER_SUBCLASSES_CACHE: list[str] | None = None
+
+
+def get_provider_subclasses() -> list[str]:
+    """Get cached list of provider subclass paths for select_related.
+
+    This is computed once and cached since provider subclasses don't change at runtime.
+    Returns a list of strings like ['oauth2provider', 'oauth2provider__application', ...].
+    """
+    global _PROVIDER_SUBCLASSES_CACHE
+    if _PROVIDER_SUBCLASSES_CACHE is None:
+        _PROVIDER_SUBCLASSES_CACHE = Provider.objects.get_queryset()._get_subclasses_recurse(
+            Provider
+        )
+    return _PROVIDER_SUBCLASSES_CACHE
+
+
 class ApplicationQuerySet(QuerySet):
     def with_provider(self) -> "QuerySet[Application]":
+        """Prefetch provider with all subclass relations."""
         qs = self.select_related("provider")
-        for subclass in Provider.objects.get_queryset()._get_subclasses_recurse(Provider):
+        for subclass in get_provider_subclasses():
             qs = qs.select_related(f"provider__{subclass}")
             # Also prefetch/select through each subclass path to ensure casted instances have access
             qs = qs.prefetch_related(f"provider__{subclass}__property_mappings")
             qs = qs.select_related(f"provider__{subclass}__application")
             qs = qs.select_related(f"provider__{subclass}__backchannel_application")
         return qs
+
+    def with_launch_url_info(self) -> "QuerySet[Application]":
+        """Annotate queryset with has_launch_url.
+
+        An app has a launch URL if:
+        1. meta_launch_url is set, OR
+        2. It has a provider (provider's launch_url will be checked separately)
+        """
+        return self.annotate(
+            _has_explicit_launch_url=Coalesce(
+                models.Case(
+                    models.When(~Q(meta_launch_url=""), then=Value(True)),
+                    default=Value(False),
+                    output_field=models.BooleanField(),
+                ),
+                Value(False),
+            )
+        )
 
 
 class Application(SerializerModel, PolicyBindingModel):
@@ -742,12 +780,17 @@ class Application(SerializerModel, PolicyBindingModel):
 
     def get_provider(self) -> Provider | None:
         """Get casted provider instance. Needs Application queryset with_provider"""
+        # Return cached result if available (avoids re-traversing subclasses)
+        if hasattr(self, "_cached_provider"):
+            return self._cached_provider
+
         if not self.provider:
+            self._cached_provider = None
             return None
 
+        # Use cached subclass list instead of recomputing
         candidates = []
-        base_class = Provider
-        for subclass in base_class.objects.get_queryset()._get_subclasses_recurse(base_class):
+        for subclass in get_provider_subclasses():
             parent = self.provider
             for level in subclass.split(LOOKUP_SEP):
                 try:
@@ -757,12 +800,12 @@ class Application(SerializerModel, PolicyBindingModel):
             if parent in candidates:
                 continue
             idx = subclass.count(LOOKUP_SEP)
-            if type(parent) is not base_class:
+            if type(parent) is not Provider:
                 idx += 1
             candidates.insert(idx, parent)
-        if not candidates:
-            return None
-        return candidates[-1]
+
+        self._cached_provider = candidates[-1] if candidates else None
+        return self._cached_provider
 
     def backchannel_provider_for[T: Provider](self, provider_type: type[T], **kwargs) -> T | None:
         """Get Backchannel provider for a specific type"""
