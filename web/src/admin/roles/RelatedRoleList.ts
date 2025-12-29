@@ -104,9 +104,9 @@ export class RelatedRoleList extends Table<Role> {
 
     willUpdate(changedProperties: PropertyValues<this>) {
         super.willUpdate(changedProperties);
-        if (changedProperties.has("showInherited") || changedProperties.has("targetGroup")) {
-            // Disable checkboxes in showInherited mode or for groups (view-only)
-            this.checkbox = !this.showInherited && !this.targetGroup;
+        if (changedProperties.has("showInherited")) {
+            // Disable checkboxes in showInherited mode (view-only)
+            this.checkbox = !this.showInherited;
         }
     }
 
@@ -147,8 +147,8 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     get columns(): TableColumn[] {
-        // Hide actions column in showInherited mode or for groups (view-only)
-        if (this.showInherited || this.targetGroup) {
+        // Hide actions column in showInherited mode (view-only)
+        if (this.showInherited) {
             return [[msg("Name"), "name"]];
         }
         return [
@@ -210,8 +210,8 @@ export class RelatedRoleList extends Table<Role> {
                   </pf-tooltip>`
                 : nothing}`;
 
-        // Hide actions in showInherited mode or for groups (view-only)
-        if (this.showInherited || this.targetGroup) {
+        // Hide actions in showInherited mode (view-only)
+        if (this.showInherited) {
             return [nameCell];
         }
 
@@ -231,7 +231,8 @@ export class RelatedRoleList extends Table<Role> {
     }
 
     renderToolbar(): TemplateResult {
-        // Hide add buttons in showInherited mode or for groups (view-only)
+        // Hide add buttons in showInherited mode (view-only)
+        // Also hide for groups since add/remove functionality isn't implemented for groups yet
         if (this.showInherited || this.targetGroup) {
             return html`${super.renderToolbar()}`;
         }
