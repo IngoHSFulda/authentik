@@ -96,7 +96,7 @@ export class UserViewPage extends WithCapabilitiesConfig(WithSession(AKElement))
                 display: flex;
                 flex-direction: column;
                 gap: 0.375rem;
-                max-width: 12rem;
+                max-width: 13rem;
             }
             .ak-button-collection > * {
                 flex: 1 0 100%;
@@ -108,7 +108,6 @@ export class UserViewPage extends WithCapabilitiesConfig(WithSession(AKElement))
             #ak-email-recovery-request,
             #update-password-request .pf-c-button,
             #ak-email-recovery-request .pf-c-button {
-                margin: 0;
                 width: 100%;
             }
         `,
